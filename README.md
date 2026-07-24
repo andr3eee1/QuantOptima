@@ -1,4 +1,4 @@
-# QComplete 
+# QuantOptima
 
 Hey! I'm a 16-year-old high school student, and this is my independent research project on neural network quantization. 
 
