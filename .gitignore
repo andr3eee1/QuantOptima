@@ -1,0 +1,28 @@
+# =========================
+# Python & Execution Caches
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# =========================
+# Virtual Environments
+# =========================
+venv/
+env/
+.env
+.venv/
+
+# =========================
+# PyTorch & Machine Learning
+# =========================
+*.pt
+*.pth
+*.weights
+*.ckpt
+*.onnx
+
+# Datasets downloaded by PyTorch (MNIST/CIFAR)
+data/
+datasets/
