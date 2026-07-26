@@ -48,6 +48,9 @@ Here is how the code is organized. (Work in progress!)
 │   ├── 03_optimal_fmt.py   # Testing the Lloyd-Max optimum format
 │   └── 04_kurtosis.py      # Testing synthetic distributions
 ├── tests/                  # Unit tests
+│   ├── test_fp.py          # Making sure my Floating Point logic actually works
+│   ├── test_int.py         # Making sure my Integer logic actually works
+│   ├── test_nf4.py         # Making sure my Normal Float logic actually works
 │   └── test_posit.py       # Making sure my Posit logic actually works
 └── results/                # Where the outputs go
     ├── histograms/         # Visualizing the tensor shapes
