@@ -28,7 +28,7 @@ class FormatFP8_E4M3:
     exp_stored = (e + self.bias).to(torch.uint8)
     
     m = abs_x / (2.0 ** e)
-    m_stored = torch.clamp(torch.round((m - 1.0) * self.m_steps), max = 7.0).to(torch.uint8)
+    m_stored = torch.clamp(torch.round((m - 1.0) * self.m_steps), min = 0.0, max = 7.0).to(torch.uint8)
     
     encoded_byte = (sign_bit << 7) | (exp_stored << 3) | m_stored
     
