@@ -9,8 +9,8 @@ class QuantizedTensor:
 
 class FormatINT8:
   def encode(self, fp32_tensor: torch.Tensor) -> QuantizedTensor:
-    min_val = min(fp32_tensor)
-    max_val = max(fp32_tensor)
+    min_val = fp32_tensor.min()
+    max_val = fp32_tensor.max()
 
     denominator = (max_val - min_val) if (max_val - min_val) != 0 else 1e-8
     fp32_tensor = ((fp32_tensor - min_val) / denominator) * 254 - 127
