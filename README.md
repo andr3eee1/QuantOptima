@@ -60,6 +60,6 @@ Here is how the code is organized. (Work in progress!)
 
 ## Current Status
 - [x] Phase 0: Setup and manual format implementation.
-- [ ] Phase 1: Standard format tournament.
+- [x] Phase 1: Standard format tournament.
 - [ ] Phase 2: Building the perfect format (Lloyd-Max).
 - [ ] Phase 3: Analyzing why certain formats win (Kurtosis & Outliers).
