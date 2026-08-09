@@ -19,10 +19,8 @@ Basically, Large Language Models (like GPT) use billions of numbers (weights). S
 
 ## Repository Structure
 
-Here is how the code is organized. (Work in progress!)
-
 ```text
-├── README.md               # You are here! Project overview and (later) the final report.
+├── README.md               # You are here! Project overview and the final report.
 ├── requirements.txt        # Python dependencies
 ├── src/                    # The core logic
 │   ├── formats/            # Hand-written encoders and decoders
@@ -58,8 +56,10 @@ Here is how the code is organized. (Work in progress!)
     └── figures/            # Final graphs comparing everything
 ```
 
-## Current Status
+## Final Results & Conclusion
 - [x] Phase 0: Setup and manual format implementation.
 - [x] Phase 1: Standard format tournament.
 - [x] Phase 2: Building the perfect format (Lloyd-Max).
-- [ ] Phase 3: Analyzing why certain formats win (Kurtosis & Outliers).
+- [x] Phase 3: Analyzing why certain formats win (Kurtosis & Outliers).
+
+**The Plot Twist:** I successfully built the mathematically perfect codebook (OPTIM) that minimized the Mean Squared Error (MSE) better than anything else. But it actualy *lost* in real model accuracy to standard INT8 and NF4! The experiment proved that neural networks rely heavily on extreme outliers to function. By optimizing only for the main cluster of numbers, the "perfect" math destroyed the rare but critical edge values. I mapped the exact crossover point using excess kurtosis ($\kappa$) to show exactly when standard grids fail and dynamic formats like FP8 take over.

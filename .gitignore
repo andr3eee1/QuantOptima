@@ -26,3 +26,8 @@ env/
 # Datasets downloaded by PyTorch (MNIST/CIFAR)
 data/
 datasets/
+
+# =========================
+# Documentation
+# =========================
+*.typ
