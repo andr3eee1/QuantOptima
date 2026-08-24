@@ -43,7 +43,7 @@ def run_benchmark(seed: int):
   
   # Load the trained FP32 memory state
   base_model = CifarCNN().to(device)
-  base_model.load_state_dict(torch.load("results/models/cifar_fp32_baseline.pth", map_location = device))
+  base_model.load_state_dict(torch.load(f"results/models/model_seed_{seed}.pth", map_location = device))
   base_model.eval()
   
   print("Evaluating FP32 Baseline...")

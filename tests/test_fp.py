@@ -37,3 +37,14 @@ def test_exact_powers_of_two():
   res = fmt.fake_quantize(t)
   
   assert torch.equal(res, t), "Powers of 2 suffered precision degradation!"
+
+def test_subnormals():
+  """Tests if subnormal values are handled correctly, as required by C2."""
+  fmt = FormatFP8_E4M3()
+  t = torch.tensor([0.001])
+  res = fmt.fake_quantize(t)
+  
+  # Before fixing, 0.001 decodes to 0.015625
+  # E4M3 min subnormal is 2^-9 (0.001953125). 
+  # Depending on rounding, it should be 0.0 or 0.001953125.
+  assert res[0].item() < 0.01, f"Expected subnormal handling, got {res[0].item()}"

@@ -11,7 +11,7 @@ from src.utils.seed import fix_seed
 from src.model.network import CifarCNN
 
 
-def plot_weight_histograms(model):
+def plot_weight_histograms(model, seed):
   """Extracts weights and generates histograms in results/histograms/."""
   os.makedirs("results/histograms", exist_ok = True)
   
@@ -22,13 +22,13 @@ def plot_weight_histograms(model):
       weights = param.detach().cpu().numpy().flatten()
       
       plt.hist(weights, bins = 150, alpha = 0.75, color = 'blue')
-      plt.title(f"Weight Distribution: {name}")
+      plt.title(f"Weight Distribution: {name} (Seed {seed})")
       plt.xlabel("Value")
       plt.ylabel("Frequency")
       plt.grid(True)
       
       safe_name = name.replace(".", "_")
-      save_path = f"results/histograms/{safe_name}.png"
+      save_path = f"results/histograms/{safe_name}_seed_{seed}.png"
       plt.savefig(save_path)
       plt.close()
       
@@ -77,12 +77,12 @@ def train_baseline_model(seed: int):
         running_loss = 0.0
 
   os.makedirs("results/models", exist_ok = True)
-  save_path = "results/models/cifar_fp32_baseline.pth"
+  save_path = f"results/models/model_seed_{seed}.pth"
   torch.save(model.state_dict(), save_path)
   print(f"\nTraining Complete! Baseline FP32 weights saved to: {save_path}")
   
   print("\nExtracting weights and generating histograms...")
-  plot_weight_histograms(model)
+  plot_weight_histograms(model, seed)
 
 
 if __name__ == "__main__":
