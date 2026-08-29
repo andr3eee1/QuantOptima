@@ -28,31 +28,25 @@ def test_posit_golden_zone():
 
 
 def test_posit_max_bounds():
-  """Tests the absolute limits of Posit8 with es = 0."""
+  """Tests the absolute limits of Posit8 with es = 0 under per-tensor scaling."""
   fmt = FormatPosit8(es = 0)
   
-  # The maximum representable value in an 8-bit Posit with es = 0 is exactly 64.0.
-  # Any massive outlier must snap to 64.0 or -64.0.
+  # With per-tensor scaling, -5000 is perfectly recovered (modulo floating noise)
   t = torch.tensor([1000.0, -5000.0])
   res = fmt.fake_quantize(t)
   
-  assert res[0].item() == 64.0, "Upper bound clipping failed! Did not snap to 64.0."
-  assert res[1].item() == -64.0, "Lower bound clipping failed! Did not snap to -64.0."
-
+  assert torch.abs(res[1] - (-5000.0)) < 1.0, "The max outlier was not perfectly scaled and recovered!"
 
 def test_posit_tapered_precision():
   """Tests dynamic bit allocation: huge numbers lose decimal precision, small numbers keep it."""
   fmt = FormatPosit8(es = 0)
   
-  # 1.5 is near the center. The Regime is short, leaving plenty of bits for the Fraction.
-  # It should be represented perfectly with no error.
-  t_small = torch.tensor([1.5]) 
+  # By adding 64.0, we force the scale factor to be exactly 1.0 (since max_val is 64.0)
+  t_small = torch.tensor([1.5, 64.0])
   res_small = fmt.fake_quantize(t_small)
   
-  # 24.2 is a large outlier. The Regime eats 6 bits: [0 11111 0 ...]
-  # This leaves exactly 1 bit for the fraction. 
-  # The valid values here are 16.0 and 24.0. It loses the decimal and snaps to 24.0.
-  t_large = torch.tensor([24.2])
+  # 24.2 loses its fraction and snaps to 24.0 when scale = 1.0
+  t_large = torch.tensor([24.2, 64.0])
   res_large = fmt.fake_quantize(t_large)
   
   assert res_small[0].item() == 1.5, "Lost precision in the high-accuracy golden zone!"

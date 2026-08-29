@@ -10,8 +10,8 @@ from collections import defaultdict
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.model.network import CifarCNN
-from src.formats.int_fmt import FormatINT8
-from src.formats.fp_fmt import FormatFP8_E4M3
+from src.formats.int_fmt import FormatINT8, FormatINT4
+from src.formats.fp_fmt import FormatFP8_E4M3, FormatFP4_E2M1
 from src.formats.nf4_fmt import FormatNF4
 from src.formats.posit_fmt import FormatPosit8
 
@@ -49,7 +49,9 @@ def main():
     "INT8": (FormatINT8(), 8),
     "FP8 (E4M3)": (FormatFP8_E4M3(), 8),
     "Posit8": (FormatPosit8(es = 0), 8),
-    "NF4": (FormatNF4(), 4)
+    "NF4": (FormatNF4(), 4),
+    "INT4": (FormatINT4(), 4),
+    "FP4 (E2M1)": (FormatFP4_E2M1(), 4)
   }
   
   # To store accuracies

@@ -10,6 +10,11 @@ class FormatPosit8:
     for b in range(256):
       valid_floats.append(self._decode_byte(b))
     self.lut = torch.tensor(valid_floats, dtype = torch.float32)
+    
+    # Calculate the maximum finite value in the LUT to use for scaling
+    safe_lut = self.lut.clone()
+    safe_lut[torch.isinf(safe_lut) | torch.isnan(safe_lut)] = 0.0
+    self.max_val = safe_lut.abs().max().item()
 
   def encode(self, fp32_tensor: torch.Tensor) -> torch.Tensor:
     safe_lut = self.lut.clone()
@@ -73,5 +78,11 @@ class FormatPosit8:
     return torch.tensor(decoded_floats, dtype = torch.float32).view(quantized_packet.shape)
 
   def fake_quantize(self, fp32_tensor: torch.Tensor) -> torch.Tensor:
-    q_packet=self.encode(fp32_tensor)
-    return self.decode(q_packet)
+    absmax = torch.nan_to_num(fp32_tensor).abs().max()
+    scale = absmax / self.max_val if absmax != 0 else torch.tensor(1e-8, device=fp32_tensor.device)
+    
+    scaled_tensor = fp32_tensor / scale
+    q_packet = self.encode(scaled_tensor)
+    decoded_scaled = self.decode(q_packet).to(fp32_tensor.device)
+    
+    return decoded_scaled * scale

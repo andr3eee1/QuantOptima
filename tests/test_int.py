@@ -3,9 +3,10 @@ from src.formats.int_fmt import FormatINT8
 
 def test_exact_zero_mapping():
   fmt = FormatINT8()
-  t = torch.tensor([-15.0, 0.0, 15.0])
+  # Test with an asymmetric distribution where min and max are not balanced
+  t = torch.tensor([-5.0, 0.0, 15.0, 20.0])
   res = fmt.fake_quantize(t)
-  assert res[1].item() == 0.0, "Zero point shifted during quantization!"
+  assert res[1].item() == 0.0, "Zero point shifted during quantization! It must be exact."
 
 def test_uniform_step_size():
   fmt = FormatINT8()

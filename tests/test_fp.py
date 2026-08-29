@@ -12,19 +12,21 @@ def test_zero_handling():
 
 
 def test_clipping_bounds():
-  """Tests if massive outliers are properly clipped to the E4M3 limits."""
+  """Tests if massive outliers scale the whole tensor safely instead of clipping."""
   fmt = FormatFP8_E4M3()
   t = torch.tensor([1000.0, -5000.0])
   res = fmt.fake_quantize(t)
   
-  assert res[0].item() == 448.0, "Clipping failed at the upper bound!"
-  assert res[1].item() == -448.0, "Clipping failed at the lower bound!"
-
+  # With per-tensor scaling, -5000.0 determines the scale and maps to -448.0 internally.
+  # So -5000.0 is perfectly recovered (modulo some FP math noise), and 1000.0 is scaled down.
+  assert torch.abs(res[1] - (-5000.0)) < 1.0, "The max outlier was not perfectly scaled and recovered!"
 
 def test_known_quantization_error():
   """Tests a specific known fractional value to verify mantissa precision."""
   fmt = FormatFP8_E4M3()
-  t = torch.tensor([14.5])
+  # By adding 448.0, we force the scale factor to be exactly 1.0
+  # This allows us to test raw E4M3 banker's rounding on 14.5
+  t = torch.tensor([14.5, 448.0])
   res = fmt.fake_quantize(t)
   
   assert res[0].item() == 14.0, "Banker's rounding failed! Did not map 14.5 to 14.0"
@@ -41,7 +43,8 @@ def test_exact_powers_of_two():
 def test_subnormals():
   """Tests if subnormal values are handled correctly, as required by C2."""
   fmt = FormatFP8_E4M3()
-  t = torch.tensor([0.001])
+  # Add 448.0 to the tensor so per-tensor scaling leaves 0.001 as 0.001
+  t = torch.tensor([0.001, 448.0])
   res = fmt.fake_quantize(t)
   
   # Before fixing, 0.001 decodes to 0.015625
