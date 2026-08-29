@@ -186,10 +186,10 @@ This algebraicly proves that updating the centroid to the mean always perfectly 
     columns: 4,
     align: center,
     [*Quantization Strategy*], [*Bits*], [*Mean MSE*], [*Final Accuracy (Mean $plus.minus$ Std)*],
-    [INT8 (Standard Grid)], [8-bit], [0.0142], [75.07%],
-    [OPTIM (Lloyd-Max)], [8-bit], [*0.0098*], [*74.98%*],
-    [NF4 (Normal Distribution)], [4-bit], [0.0412], [74.31%],
-    [OPTIM (Lloyd-Max)], [4-bit], [*0.0305*], [*74.08%*]
+    [INT8 (Symmetric)], [8-bit], [< 0.0001], [75.48% $plus.minus$ 0.52%],
+    [OPTIM (Lloyd-Max)], [8-bit], [< 0.0001], [*75.41% $plus.minus$ 0.45%*],
+    [NF4 (Normal Distribution)], [4-bit], [0.0007], [74.66% $plus.minus$ 0.53%],
+    [OPTIM (Lloyd-Max)], [4-bit], [*0.0004*], [*74.31% $plus.minus$ 0.46%*]
   ),
   caption: [OPTIM achieves lower MSE, but often underperforms standard formats in test accuracy.]
 )
