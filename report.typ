@@ -126,7 +126,9 @@ I applyed these formats to my trained CNN by overriding the memory arrays in pla
   caption: [Phase 1 & 2 Standard Formats Benchmark Results on CIFAR-10 (over 5 seeds).]
 )
 
-Following the fixes to subnormal handling and the introduction of fair per-tensor scaling, the previous "Accuracy Paradox" where INT8 magically outperformed FP8 disappeared. Both 8-bit formats perform statistically identically to the FP32 baseline. The McNemar test (p-value: 0.7699) confirms there is no significant difference between INT8 and FP8 at this bit-width. When dropping to 4-bit formats, we observe that the standard INT4 format outperforms the exponential FP4 format on this CNN architecture.
+Following the fixes to subnormal handling and the introduction of fair per-tensor scaling, the previous "Accuracy Paradox" where INT8 magically outperformed FP8 disappeared. Both 8-bit formats perform statistically identically to the FP32 baseline. 
+
+*Answering the Verification Question:* In Version 1 of this report, the FP32 baseline scored 75.05% and INT8 scored 75.07%. Out of the 10,000 images in the CIFAR-10 test dataset, a difference of 0.02 percentage points translates to exactly *2 images*. My entire hypothesis that "INT8 acts as a mathematical regularizer" was based on a random variance of just two images. The McNemar test across multiple seeds now mathematically proves this difference was nothing but statistical noise (p-value: 0.7699 between INT8 and FP8). There is no "mathematical regularizer" effect—at 8 bits, they are simply equivalent to the baseline. When dropping to 4-bit formats, we observe that the standard INT4 format outperforms the exponential FP4 format on this CNN architecture.
 
 == 5. Building the "Perfect" Codebook (Phase 2)
 The standard formats are just educated guesses. NF4 guesses the weights are a perfect bell curve. INT8 guesses an even spread is fine. But what if we don't guess?
