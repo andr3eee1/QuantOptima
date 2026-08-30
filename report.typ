@@ -229,6 +229,18 @@ I evaluated the inversion point. As I slide the distribution to the right (highe
 
 Because INT8 is a rigid grid, an extreme outlier forces the absolute maximum boundary to stretch to wide. When the grid stretches to cover the massive outlier, it crushes all the important middle values into the zero bucket. FP8 and Posit8 handle this much better becuase their exponents allow them to reach far outliers without sacrificing the center resolution.
 
+*The Activations Bonus:* The crossover analysis above was strictly performed on the model's static weights. However, real-world data passing through the network behaves differently. By hooking into the PyTorch forward pass, I extracted the live activations for the first 5 batches of the test set. While the weights for layers like `fc1` have a kurtosis of 8.11, the *activations* flowing into that exact same layer have a staggering kurtosis of 21.73. Activations in deeper layers like `fc2` reached a kurtosis of 23.10. This perfectly aligns with current literature (like `LLM.int8()`): while network weights are relatively well-behaved and can be compressed effectively with standard integer formats, the activations are riddled with massive, unpredictable outliers that heavily favor floating-point formats like FP8.
+
+#align(center)[
+  #grid(
+    columns: (1fr, 1fr),
+    gutter: 10pt,
+    image("results/plots/activation_hist_conv1.png"),
+    image("results/plots/activation_hist_fc1.png")
+  )
+  _Figure 5: Activation histograms for conv1 (Kurtosis 2.17) and fc1 (Kurtosis 21.73). Notice the extreme outliers stretching far out on the X-axis in the fc1 activations, requiring FP8's dynamic range._
+]
+
 == 8. Conclusion
 This project completely changed how I view data compression. I discovered that minimizing MSE is a trap. A mathematically "perfect" codebook fails in the real world because it smooths out the chaotic outliers that the neural network relies on to make predictions. Standard formats like INT8 and NF4 are actualy already operating at near-maximum efficiency for their respective distributions. 
 
