@@ -201,7 +201,7 @@ Lloyd-Max places the codebook values where the massive clump of weights is, comp
 To summarize the whole research question visually, I ploted the accuracy of every format against its bit-width constraint.
 
 #align(center)[
-  #image("results/figures/star_graph_accuracy.png", width: 100%)
+  #image("results/plots/star_graph_accuracy.png", width: 100%)
   _Figure 3: Accuracy vs. Bits. The ultimate showdown between standard and optimal codebooks._
 ]
 
@@ -221,7 +221,7 @@ $ D_"mixed" = (1 - alpha) * D_"uniform" + alpha * D_"cauchy" $
 I measured the MSE of INT8, FP8, and Posit8 as the data slowly grew fatter tails. 
 
 #align(center)[
-  #image("results/figures/kurtosis_crossover.png", width: 100%)
+  #image("results/plots/kurtosis_crossover.png", width: 100%)
   _Figure 4: Format Supremacy Inversion as kurtosis increases._
 ]
 

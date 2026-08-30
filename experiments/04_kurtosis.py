@@ -1,91 +1,106 @@
 import argparse
 import torch
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import copy
 
 from src.formats.int_fmt import FormatINT8
 from src.formats.fp_fmt import FormatFP8_E4M3
-from src.formats.nf4_fmt import FormatNF4
-from src.formats.posit_fmt import FormatPosit8
-
 from src.utils.metrics import calculate_mse
 from src.utils.seed import fix_seed
+from src.model.network import CifarCNN
 
 def calculate_kurtosis(tensor: torch.Tensor) -> float:
-  """Calculates the excess kurtosis of a 1D tensor."""
-  mean = torch.mean(tensor)
-  # Calculate the standard deviation
-  std = torch.std(tensor)
-  
-  # The 4th moment over the standard deviation squared, minus 3
-  kurt = torch.mean(((tensor - mean) / std) ** 4) - 3.0
-  
-  return kurt.item()
-
-
-def generate_synthetic_distribution(dist_type: str, n_elements: int) -> torch.Tensor:
-  """Generates a 1D array with specific tail properties."""
-  
-  if dist_type == "uniform":
-    # Flat block. No tails, no outliers. Lowest possible kurtosis.
-    return torch.rand(n_elements) * 2.0 - 1.0
-  elif dist_type == "normal":
-    # Standard bell curve. The baseline.
-    return torch.randn(n_elements)
-  elif dist_type == "laplace":
-    # Pointy center, fat tails. High kurtosis.
-    m = torch.distributions.Laplace(torch.tensor([0.0]), torch.tensor([1.0]))
-    return m.sample([n_elements]).squeeze()
-  elif dist_type == "cauchy":
-    # Insanely fat tails. Extreme outliers. 
-    # We must clamp it because Cauchy values can literally reach infinity.
-    m = torch.distributions.Cauchy(torch.tensor([0.0]), torch.tensor([1.0]))
-    return torch.clamp(m.sample([n_elements]).squeeze(), min = -20.0, max = 20.0)  
-  else:
-    raise ValueError("Unknown distribution type")
-
+    """Calculates the excess kurtosis of a 1D tensor."""
+    mean = torch.mean(tensor)
+    std = torch.std(tensor)
+    # The 4th moment over the standard deviation squared (Standard Kurtosis)
+    kurt = torch.mean(((tensor - mean) / std) ** 4)
+    return kurt.item()
 
 def run_kurtosis_experiment(seed: int):
-  print("========================================")
-  print(" PHASE 3: The Kurtosis Showdown")
-  print("========================================\n")
-  
-  fix_seed(seed)
-  n_elements = 500_000
-  
-  # We test them from lowest kurtosis to highest kurtosis
-  distributions = ["uniform", "normal", "laplace", "cauchy"]
-  
-  formats = {
-    "INT8 (Uniform)": FormatINT8(),
-    "FP8 (E4M3)": FormatFP8_E4M3(),
-    "Posit8 (es = 0)": FormatPosit8(es = 0),
-    "NF4 (4-bit Codebook)": FormatNF4()
-  }
-  
-  for dist_name in distributions:
-    print(f"\nTesting Distribution: {dist_name.upper()}")
-    print("-" * 50)
+    print("========================================")
+    print(" PHASE 3: The Kurtosis Crossover")
+    print("========================================\n")
     
-    tensor = generate_synthetic_distribution(dist_name, n_elements)
+    fix_seed(seed)
+    n_elements = 100_000
     
-    kurt_val = calculate_kurtosis(tensor)
-    print(f"Calculated Excess Kurtosis: {kurt_val:.2f}\n")
+    fmt_int8 = FormatINT8()
+    fmt_fp8 = FormatFP8_E4M3()
     
-    results = []
-    for fmt_name, fmt_engine in formats.items():
-      q_tensor = fmt_engine.fake_quantize(tensor)
-      mse = calculate_mse(tensor, q_tensor)
-      results.append((fmt_name, mse))
-      
-    # Sort results by MSE to determine the winner for this specific shape
-    results.sort(key = lambda x: x[1])
+    df_values = np.logspace(np.log10(30), np.log10(2.1), num=20)
     
-    for rank, (fmt_name, mse) in enumerate(results, 1):
-      print(f"{rank}. {fmt_name:<20} | MSE: {mse:.6f}")
+    kurtosis_vals = []
+    mse_int8 = []
+    mse_fp8 = []
+    
+    print("Sweeping Student-t degrees of freedom (fatness of tails)...")
+    for df in df_values:
+        m = torch.distributions.StudentT(df=df)
+        tensor = m.sample([n_elements]).squeeze()
+        
+        kurt_val = calculate_kurtosis(tensor)
+        
+        q_int8 = fmt_int8.fake_quantize(tensor)
+        q_fp8 = fmt_fp8.fake_quantize(tensor)
+        
+        err_int8 = calculate_mse(tensor, q_int8)
+        err_fp8 = calculate_mse(tensor, q_fp8)
+        
+        kurtosis_vals.append(kurt_val)
+        mse_int8.append(err_int8)
+        mse_fp8.append(err_fp8)
+        
+        print(f"DF: {df:5.1f} | Kurtosis: {kurt_val:8.2f} | INT8 MSE: {err_int8:.6f} | FP8 MSE: {err_fp8:.6f}")
+    
+    # Sort by kurtosis for plotting
+    sort_idx = np.argsort(kurtosis_vals)
+    kurtosis_vals = np.array(kurtosis_vals)[sort_idx]
+    mse_int8 = np.array(mse_int8)[sort_idx]
+    mse_fp8 = np.array(mse_fp8)[sort_idx]
+    
+    # Load Real Weights to plot as Stars
+    device = torch.device("cpu")
+    model = CifarCNN()
+    model.load_state_dict(torch.load("results/models/model_seed_42.pth", map_location=device, weights_only=True))
+    
+    real_kurtosis = {}
+    for name, param in model.named_parameters():
+        if 'weight' in name:
+            kurt = calculate_kurtosis(param.detach().view(-1))
+            real_kurtosis[name] = kurt
+            print(f"Real Layer: {name:<12} | Kurtosis: {kurt:.2f}")
 
+    # Plotting
+    os.makedirs("results/plots", exist_ok=True)
+    plt.figure(figsize=(10, 6))
+    
+    plt.plot(kurtosis_vals, mse_int8, label='INT8 (Symmetric, scaled)', color='blue', linewidth=2)
+    plt.plot(kurtosis_vals, mse_fp8, label='FP8 (E4M3, scaled)', color='orange', linewidth=2)
+    
+    # Add Stars for real weights
+    y_star_baseline = 0.0 # Just plot them near the bottom axis or on the INT8 curve
+    for name, kurt in real_kurtosis.items():
+        # Interpolate the Y value on the INT8 curve for visual appeal
+        y_val = np.interp(kurt, kurtosis_vals, mse_int8)
+        plt.plot(kurt, y_val, marker='*', markersize=15, label=f'Real: {name}')
+    
+    plt.title("Phase 3: MSE vs Kurtosis (The True Crossover)")
+    plt.xlabel("Kurtosis (Outlier Heaviness)")
+    plt.ylabel("Mean Squared Error (MSE)")
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.grid(True, which="both", ls="--", alpha=0.5)
+    plt.legend()
+    
+    save_path = "results/plots/kurtosis_crossover.png"
+    plt.savefig(save_path)
+    print(f"\nPlot saved to {save_path}")
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description = "Test how kurtosis changes format rankings.")
-  parser.add_argument("--seed", type = int, default = 42, help = "The random seed for data generation.")
-  args = parser.parse_args()
-  
-  run_kurtosis_experiment(args.seed)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
+    run_kurtosis_experiment(args.seed)
