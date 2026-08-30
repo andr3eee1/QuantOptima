@@ -28,14 +28,14 @@ Large Language Models and deep computer vision architectures use bilions of para
 
 #pagebreak()
 
-== What changed since v1 and why (Version 2)
-Following the review, it was noted that the initial experiment had several limitations affecting the validity of its conclusions. This report addresses these issues:
-- *C1 (Statistical Analysis)*: The accuracy differences between formats were very small and within statistical noise. I re-evaluated the tables using multi-seed training and McNemar's test.
-- *C2 (Fixing FP8)*: The initial FP8 implementation lacked support for subnormal numbers, putting the format at a disadvantage. I added full subnormal support (E4M3), as well as per-tensor scaling (aligning conditions with INT8 and NF4).
-- *C3 (Crossover)*: The claims about INT8 crashing at high kurtosis were not fully supported by the graph. I redid the experiment and analyzed the phenomenon more rigorously.
-- *C4 (Code-Report Alignment)*: The INT8 implementation was asymmetric, but the report described it as symmetric. I fixed this discrepancy.
-- *C5 (MSE Optimum)*: The k-means optimization risked getting stuck in a local optimum. I will use weighted variants to show that standard MSE is an inefficient metric for accuracy.
-- *C6 (Complete Tournament)*: I added 4-bit formats (INT4, FP4) for a complete tournament and scripted everything for reproducibility (100% of the numbers are generated via script).
+== Version 2 Improvements and Methodological Revisions
+This second version of the research report introduces several critical methodological improvements to ensure the validity of the conclusions:
+
+- *Statistical Rigor*: Previous accuracy differences between formats fell within the margin of error. All benchmarks are now run across 5 different random seeds, reporting the mean and standard deviation. Key comparisons are backed by McNemar's statistical test to distinguish real performance gains from statistical noise.
+- *Format Equalization*: The FP8 encoder was upgraded to properly support subnormal numbers (E4M3 specification). Additionally, all formats (including FP8 and Posit8) now receive identical per-tensor scaling, ensuring a perfectly fair comparison without hardcoded advantages.
+- *Code-Report Alignment*: The INT8 implementation was updated to be strictly symmetric (where 0 maps exactly to 0), perfectly aligning the codebase with the mathematics described in the report.
+- *Expanded Tournament*: Standard 4-bit formats (INT4 and FP4) were added to the benchmark to provide a complete picture of extreme compression at lower bit-widths.
+- *Rigorous Crossover Analysis*: The Kurtosis experiment was completely redesigned. Synthetic data is no longer artificially clamped, allowing the true outlier tails to form naturally. Furthermore, the live activations of the network were extracted and analyzed to explain the discrepancy between weight compression and activation compression.
 
 == 1. Introduction to the Memory Bottleneck
 When a neural network is trained, it learns patterns by adjusting the values of its weights. In frameworks like PyTorch, these weights are stored as `float32` variables. A single `float32` takes 4 bytes of memory. 
